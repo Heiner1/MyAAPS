@@ -1,0 +1,1593 @@
+Index: wear/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/AndroidManifest.xml	(revision 61411e6bd6f829a8404d274e85f0afda6dcadbbb)
++++ wear/src/main/AndroidManifest.xml	(date 1577658338000)
+@@ -43,12 +43,12 @@
+             android:allowEmbedded="true"
+             android:label="@string/label_xdrip_no_chart"
+             android:permission="android.permission.BIND_WALLPAPER">
+-            <meta-data
+-                android:name="android.service.wallpaper"
+-                android:resource="@xml/watch_face" />
+-            <meta-data
+-                android:name="com.google.android.wearable.watchface.preview"
+-                android:resource="@drawable/watchface_nochart" />
++        <meta-data
++            android:name="android.service.wallpaper"
++            android:resource="@xml/watch_face" />
++        <meta-data
++            android:name="com.google.android.wearable.watchface.preview"
++            android:resource="@drawable/watchface_nochart" />
+ 
+             <intent-filter>
+                 <action android:name="android.service.wallpaper.WallpaperService" />
+@@ -57,6 +57,25 @@
+             </intent-filter>
+         </service>
+ 
++        <service
++            android:name=".watchfaces.GreenChart"
++            android:allowEmbedded="true"
++            android:label="@string/label_xdrip_greenchart"
++            android:permission="android.permission.BIND_WALLPAPER">
++            <meta-data
++                android:name="android.service.wallpaper"
++                android:resource="@xml/watch_face" />
++            <meta-data
++                android:name="com.google.android.wearable.watchface.preview"
++                android:resource="@drawable/watchface_green" />
++
++            <intent-filter>
++                <action android:name="android.service.wallpaper.WallpaperService" />
++
++                <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
++            </intent-filter>
++        </service>
++
+         <service
+             android:name=".watchfaces.Home"
+             android:allowEmbedded="true"
+Index: wear/src/main/res/values/strings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/res/values/strings.xml	(revision 61411e6bd6f829a8404d274e85f0afda6dcadbbb)
++++ wear/src/main/res/values/strings.xml	(date 1577658338000)
+@@ -9,6 +9,7 @@
+     <string name="label_xdrip_big_chart">AAPS(BigChart)</string>
+     <string name="label_xdrip_no_chart">AAPS(NoChart)</string>
+     <string name="label_xdrip_circle">AAPS(Circle)</string>
++    <string name="label_xdrip_greenchart">AAPSv2-green</string>
+     <string name="label_xdrip_v2">AAPSv2</string>
+     <string name="label_xdrip_cockpit">AAPS(Cockpit)</string>
+     <string name="label_xdrip_steampunk">AAPS(Steampunk)</string>
+Index: wear/src/main/java/info/nightscout/androidaps/watchfaces/GreenChart.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/java/info/nightscout/androidaps/watchfaces/GreenChart.java	(date 1577658114000)
++++ wear/src/main/java/info/nightscout/androidaps/watchfaces/GreenChart.java	(date 1577658114000)
+@@ -0,0 +1,241 @@
++package info.nightscout.androidaps.watchfaces;
++
++import android.content.Intent;
++import android.graphics.Color;
++import androidx.core.content.ContextCompat;
++import android.support.wearable.watchface.WatchFaceStyle;
++import android.view.LayoutInflater;
++
++import com.ustwo.clockwise.common.WatchMode;
++
++import info.nightscout.androidaps.R;
++import info.nightscout.androidaps.interaction.menus.MainMenuActivity;
++
++public class GreenChart extends BaseWatchFace {
++
++    private long chartTapTime = 0;
++    private long sgvTapTime = 0;
++
++    @Override
++    public void onCreate() {
++        super.onCreate();
++        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
++        layoutView = inflater.inflate(R.layout.activity_greenchart, null);
++        performViewSetup();
++    }
++
++    @Override
++    protected void onTapCommand(int tapType, int x, int y, long eventTime) {
++
++        int extra = mSgv!=null?(mSgv.getRight() - mSgv.getLeft())/2:0;
++
++        if (tapType == TAP_TYPE_TAP&&
++                x >=chart.getLeft() &&
++                x <= chart.getRight()&&
++                y >= chart.getTop() &&
++                y <= chart.getBottom()){
++            if (eventTime - chartTapTime < 800){
++                changeChartTimeframe();
++            }
++            chartTapTime = eventTime;
++        } else if (tapType == TAP_TYPE_TAP&&
++                x + extra >=mSgv.getLeft() &&
++                x - extra <= mSgv.getRight()&&
++                y >= mSgv.getTop() &&
++                y <= mSgv.getBottom()){
++            if (eventTime - sgvTapTime < 800){
++                Intent intent = new Intent(this, MainMenuActivity.class);
++                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
++                startActivity(intent);
++            }
++            sgvTapTime = eventTime;
++        }
++    }
++
++    private void changeChartTimeframe() {
++        int timeframe = Integer.parseInt(sharedPrefs.getString("chart_timeframe", "3"));
++        timeframe = (timeframe%5) + 1;
++        sharedPrefs.edit().putString("chart_timeframe", "" + timeframe).commit();
++    }
++
++    @Override
++    protected WatchFaceStyle getWatchFaceStyle(){
++        return new WatchFaceStyle.Builder(this).setAcceptsTapEvents(true).build();
++    }
++
++    protected void setColorDark() {
++        mLinearLayout.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_statusView));
++        mLinearLayout2.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_background));
++        mRelativeLayout.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_background));
++        mTime.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mIOB1.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mIOB2.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mCOB1.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mCOB2.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mDay.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mMonth.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mLoop.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++
++        setTextSizes();
++
++        if (sgvLevel == 1) {
++            mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_highColor));
++            mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_highColor));
++        } else if (sgvLevel == 0) {
++            mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_greenmidColor));
++            mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_greenmidColor));
++        } else if (sgvLevel == -1) {
++            mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_lowColor));
++            mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_lowColor));
++        }
++
++        if (ageLevel == 1) {
++            mTimestamp.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        } else {
++            mTimestamp.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_TimestampOld));
++        }
++
++        if (batteryLevel == 1) {
++            mUploaderBattery.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_uploaderBattery));
++        } else {
++            mUploaderBattery.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_uploaderBatteryEmpty));
++        }
++        mRigBattery.setTextColor(Color.BLACK);
++        mDelta.setTextColor(Color.BLACK);
++        mAvgDelta.setTextColor(Color.BLACK);
++        mBasalRate.setTextColor(Color.BLACK);
++        mBgi.setTextColor(Color.BLACK);
++
++        if (loopLevel == 1) {
++            mLoop.setBackgroundResource(R.drawable.loop_green_25);
++        } else {
++            mLoop.setBackgroundResource(R.drawable.loop_red_25);
++        }
++
++        if (chart != null) {
++            highColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_highColor);
++            lowColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_lowColor);
++            midColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_greenmidColor);
++            gridColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_gridColor);
++            basalBackgroundColor = ContextCompat.getColor(getApplicationContext(), R.color.basal_dark);
++            basalCenterColor = ContextCompat.getColor(getApplicationContext(), R.color.basal_light);
++            pointSize = 2;
++            setupCharts();
++        }
++    }
++
++    protected void setColorLowRes() {
++        mLinearLayout.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_statusView));
++        mLinearLayout2.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_background));
++        mRelativeLayout.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_background));
++        mLoop.setBackgroundResource(R.drawable.loop_grey_25);
++        mLoop.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mTimestamp.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_Timestamp));
++        mDelta.setTextColor(Color.BLACK);
++        mAvgDelta.setTextColor(Color.BLACK);
++        mRigBattery.setTextColor(Color.BLACK);
++        mUploaderBattery.setTextColor(Color.BLACK);
++        mBasalRate.setTextColor(Color.BLACK);
++        mBgi.setTextColor(Color.BLACK);
++        mIOB1.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mIOB2.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mCOB1.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mCOB2.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mDay.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mMonth.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++        mTime.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_greenmidColor));
++        if (chart != null) {
++            highColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor);
++            lowColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor);
++            midColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_greenmidColor);
++            gridColor = ContextCompat.getColor(getApplicationContext(), R.color.dark_gridColor);
++            basalBackgroundColor = ContextCompat.getColor(getApplicationContext(), R.color.basal_dark_lowres);
++            basalCenterColor = ContextCompat.getColor(getApplicationContext(), R.color.basal_light_lowres);
++            pointSize = 2;
++            setupCharts();
++        }
++        setTextSizes();
++    }
++
++    protected void setColorBright() {
++
++        if (getCurrentWatchMode() == WatchMode.INTERACTIVE) {
++            mLinearLayout.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.light_stripe_background));
++            mLinearLayout2.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.light_background));
++            mRelativeLayout.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.light_background));
++            mTime.setTextColor(Color.BLACK);
++            mIOB1.setTextColor(Color.BLACK);
++            mIOB2.setTextColor(Color.BLACK);
++            mCOB1.setTextColor(Color.BLACK);
++            mCOB2.setTextColor(Color.BLACK);
++            mDay.setTextColor(Color.BLACK);
++            mMonth.setTextColor(Color.BLACK);
++            mLoop.setTextColor(Color.BLACK);
++
++            setTextSizes();
++
++            if (sgvLevel == 1) {
++                mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.light_highColor));
++                mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.light_highColor));
++            } else if (sgvLevel == 0) {
++                mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.light_greenmidColor));
++                mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.light_greenmidColor));
++            } else if (sgvLevel == -1) {
++                mSgv.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.light_lowColor));
++                mDirection.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.light_lowColor));
++            }
++
++            if (ageLevel == 1) {
++                mTimestamp.setTextColor(Color.BLACK);
++            } else {
++                mTimestamp.setTextColor(Color.RED);
++            }
++
++            if (batteryLevel == 1) {
++                mUploaderBattery.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++            } else {
++                mUploaderBattery.setTextColor(Color.RED);
++            }
++            mRigBattery.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++            mDelta.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++            mAvgDelta.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++            mBasalRate.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++            mBgi.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.dark_midColor));
++
++            if (loopLevel == 1) {
++                mLoop.setBackgroundResource(R.drawable.loop_green_25);
++            } else {
++                mLoop.setBackgroundResource(R.drawable.loop_red_25);
++            }
++
++            if (chart != null) {
++                highColor = ContextCompat.getColor(getApplicationContext(), R.color.light_highColor);
++                lowColor = ContextCompat.getColor(getApplicationContext(), R.color.light_lowColor);
++                midColor = ContextCompat.getColor(getApplicationContext(), R.color.light_greenmidColor);
++                gridColor = ContextCompat.getColor(getApplicationContext(), R.color.light_gridColor);
++                basalBackgroundColor = ContextCompat.getColor(getApplicationContext(), R.color.basal_light);
++                basalCenterColor = ContextCompat.getColor(getApplicationContext(), R.color.basal_dark);
++                pointSize = 2;
++                setupCharts();
++            }
++        } else {
++            setColorDark();
++        }
++    }
++
++    protected void setTextSizes() {
++
++        if (mIOB1 != null && mIOB2 != null) {
++
++            if (detailedIOB) {
++                mIOB1.setTextSize(14);
++                mIOB2.setTextSize(10);
++            } else {
++                mIOB1.setTextSize(10);
++                mIOB2.setTextSize(14);
++            }
++        }
++    }
++}
+Index: wear/src/main/res/layout/round_activity_greenchart.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/res/layout/round_activity_greenchart.xml	(date 1577658114000)
++++ wear/src/main/res/layout/round_activity_greenchart.xml	(date 1577658114000)
+@@ -0,0 +1,384 @@
++<?xml version="1.0" encoding="utf-8"?>
++<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
++    android:layout_height="match_parent" tools:context=".watchfaces.Home2" tools:deviceIds="wear_round"
++    android:background="@color/black"
++    android:id="@+id/main_layout">
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:orientation="vertical"
++        android:textAlignment="center"
++        android:weightSum="1.1">
++
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="0px"
++            android:orientation="vertical"
++            android:layout_weight="0.05">
++        </LinearLayout>
++
++        <LinearLayout
++            android:layout_width="fill_parent"
++            android:layout_height="0px"
++            android:layout_gravity="center_horizontal"
++            android:layout_weight="0.27"
++            android:gravity="center_horizontal"
++            android:orientation="horizontal"
++            android:textAlignment="center">
++
++            <TextView
++                android:id="@+id/loop"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_gravity="bottom|center"
++                android:background="@drawable/loop_grey_25"
++                android:gravity="center"
++                android:text="--'"
++                android:textAlignment="center"
++                android:textColor="#FFFFFF"
++                android:textSize="14sp"
++                android:textStyle="bold" />
++
++            <TextView
++                android:id="@+id/sgv"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_gravity="center_horizontal|bottom"
++                android:layout_marginBottom="-2dp"
++                android:gravity="bottom|right"
++                android:paddingLeft="5dp"
++                android:paddingRight="5dp"
++                android:paddingTop="-2dp"
++                android:text="---"
++                android:textColor="#FFFFFF"
++                android:textSize="38sp" />
++
++            <LinearLayout
++                android:layout_width="wrap_content"
++                android:layout_height="fill_parent"
++                android:layout_gravity="center_horizontal"
++                android:baselineAligned="false"
++                android:gravity="center_vertical"
++                android:orientation="vertical"
++                android:paddingEnd="4dp"
++                android:textAlignment="center">
++
++                <TextView
++                    android:id="@+id/direction"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center_horizontal|bottom"
++                    android:gravity="center_horizontal|bottom"
++                    android:text="--"
++                    android:textAlignment="center"
++                    android:textColor="#FFFFFF"
++                    android:textSize="22sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/timestamp"
++                    android:layout_width="fill_parent"
++                    android:layout_height="wrap_content"
++                    android:layout_marginBottom="2dp"
++                    android:gravity="center"
++                    android:text="--'"
++                    android:textColor="#FFFFFF"
++                    android:textSize="14sp"
++                    android:textStyle="bold" />
++
++            </LinearLayout>
++
++        </LinearLayout>
++
++        <LinearLayout
++            android:id="@+id/secondary_layout"
++            android:layout_width="fill_parent"
++            android:layout_height="0px"
++            android:layout_gravity="center"
++            android:layout_weight="0.10"
++            android:background="@color/light_grey"
++            android:gravity="center"
++            android:orientation="vertical"
++            android:padding="1dp">
++
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_gravity="center"
++                android:gravity="center"
++                android:orientation="horizontal"
++                android:paddingEnd="5dp"
++                android:paddingStart="5dp"
++                android:textAlignment="center">
++
++                <TextView
++                    android:id="@+id/delta"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="+/-"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="13sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/avgdelta"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="avg"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="13sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/uploader_battery"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="--%"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="13sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/rig_battery"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="--%"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="13sp"
++                    android:textStyle="bold"
++                    android:visibility="gone" />
++
++                <TextView
++                    android:id="@+id/tmpBasal"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1.7"
++                    android:gravity="center"
++                    android:text="-.--U/h"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="13sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/bgiView"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="bgi"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="13sp"
++                    android:textStyle="bold"
++                    android:visibility="gone" />
++
++                <TextView
++                    android:id="@+id/AAPSv2"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:layout_weight="0"
++                    android:text=""
++                    android:visibility="gone" />
++
++            </LinearLayout>
++
++        </LinearLayout>
++
++        <LinearLayout
++            android:id="@+id/tertiary_layout"
++            android:layout_width="match_parent"
++            android:layout_height="0px"
++            android:layout_weight="0.22"
++            android:background="@color/black"
++            android:gravity="center"
++            android:orientation="vertical"
++            android:padding="1dp">
++
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="match_parent"
++                android:layout_gravity="center"
++                android:baselineAligned="false"
++                android:gravity="center"
++                android:orientation="horizontal"
++                android:weightSum="7">
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="wrap_content"
++                    android:layout_height="match_parent"
++                    android:layout_gravity="center"
++                    android:baselineAligned="false"
++                    android:gravity="center"
++                    android:orientation="vertical"
++                    android:textAlignment="center">
++
++                    <TextView
++                        android:id="@+id/cob_text"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="Carb"
++                        android:textColor="#FFFFFF"
++                        android:textSize="10sp"
++                        android:textStyle="bold" />
++
++                    <TextView
++                        android:id="@+id/cobView"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="--g"
++                        android:textAlignment="center"
++                        android:textColor="#FFFFFF"
++                        android:textSize="14sp"
++                        android:textStyle="bold" />
++
++                </LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++                <TextView
++                    android:id="@+id/watch_time"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:gravity="center"
++                    android:text="12:00"
++                    android:textAlignment="center"
++                    android:textColor="#FFFFFF"
++                    android:textSize="30sp" />
++
++                <LinearLayout
++                    android:id="@+id/date_time"
++                    android:layout_width="wrap_content"
++                    android:layout_height="match_parent"
++                    android:layout_gravity="center"
++                    android:gravity="center"
++                    android:orientation="vertical"
++                    android:textAlignment="center"
++                    android:visibility="gone">
++
++                    <TextView
++                        android:id="@+id/day"
++                        android:layout_width="23dp"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="day"
++                        android:textAlignment="center"
++                        android:textColor="#FFFFFF"
++                        android:textSize="12sp" />
++
++                    <TextView
++                        android:id="@+id/month"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="mth"
++                        android:textColor="#FFFFFF"
++                        android:textSize="12sp" />
++
++                </LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="wrap_content"
++                    android:layout_height="match_parent"
++                    android:layout_gravity="center"
++                    android:gravity="center"
++                    android:orientation="vertical"
++                    android:textAlignment="center">
++
++
++                    <TextView
++                        android:id="@+id/iob_text"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="IOB"
++                        android:textAlignment="center"
++                        android:textColor="#FFFFFF"
++                        android:textSize="10sp"
++                        android:textStyle="bold" />
++
++                    <TextView
++                        android:id="@+id/iobView"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="--U"
++                        android:textColor="#FFFFFF"
++                        android:textSize="14sp"
++                        android:textStyle="bold" />
++
++                </LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++            </LinearLayout>
++
++        </LinearLayout>
++
++        <lecho.lib.hellocharts.view.LineChartView
++            android:id="@+id/chart"
++            android:layout_width="match_parent"
++            android:layout_height="0px"
++            android:layout_gravity="bottom"
++            android:layout_weight="0.41"
++            android:gravity="center_horizontal|top" />
++
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="0px"
++            android:orientation="vertical"
++            android:layout_weight="0.05">
++        </LinearLayout>
++
++    </LinearLayout>
++
++</RelativeLayout>
+\ No newline at end of file
+Index: wear/src/main/res/layout/rect_activity_greenchart.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/res/layout/rect_activity_greenchart.xml	(date 1577658114000)
++++ wear/src/main/res/layout/rect_activity_greenchart.xml	(date 1577658114000)
+@@ -0,0 +1,369 @@
++<?xml version="1.0" encoding="utf-8"?>
++<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
++    android:layout_height="match_parent" tools:context=".watchfaces.Home2" tools:deviceIds="wear_square"
++    android:background="@color/black"
++    android:id="@+id/main_layout">
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:orientation="vertical"
++        android:textAlignment="center"
++        android:weightSum="1">
++
++        <LinearLayout
++            android:layout_width="fill_parent"
++            android:layout_height="0px"
++            android:layout_gravity="center_horizontal"
++            android:layout_weight="0.27"
++            android:gravity="center_horizontal"
++            android:orientation="horizontal"
++            android:textAlignment="center">
++
++            <TextView
++                android:id="@+id/loop"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_gravity="bottom|center"
++                android:background="@drawable/loop_grey_25"
++                android:gravity="center"
++                android:text="--'"
++                android:textAlignment="center"
++                android:textColor="#FFFFFF"
++                android:textSize="14sp"
++                android:textStyle="bold" />
++
++            <TextView
++                android:id="@+id/sgv"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_gravity="center_horizontal|bottom"
++                android:layout_marginBottom="-2dp"
++                android:gravity="bottom|right"
++                android:paddingLeft="5dp"
++                android:paddingRight="5dp"
++                android:paddingTop="-2dp"
++                android:text="---"
++                android:textColor="#FFFFFF"
++                android:textSize="38sp" />
++
++            <LinearLayout
++                android:layout_width="wrap_content"
++                android:layout_height="fill_parent"
++                android:layout_gravity="center_horizontal"
++                android:baselineAligned="false"
++                android:gravity="center_vertical"
++                android:orientation="vertical"
++                android:textAlignment="center">
++
++                <TextView
++                    android:id="@+id/direction"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center_horizontal|bottom"
++                    android:gravity="center_horizontal|bottom"
++                    android:text="--"
++                    android:textAlignment="center"
++                    android:textColor="#FFFFFF"
++                    android:textSize="22sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/timestamp"
++                    android:layout_width="fill_parent"
++                    android:layout_height="wrap_content"
++                    android:layout_marginBottom="2dp"
++                    android:gravity="center"
++                    android:text="--'"
++                    android:textColor="#FFFFFF"
++                    android:textSize="14sp"
++                    android:textStyle="bold" />
++
++            </LinearLayout>
++
++        </LinearLayout>
++
++        <LinearLayout
++            android:id="@+id/secondary_layout"
++            android:layout_width="fill_parent"
++            android:layout_height="0px"
++            android:layout_gravity="center"
++            android:layout_weight="0.10"
++            android:background="@color/light_grey"
++            android:gravity="center"
++            android:orientation="vertical"
++            android:padding="1dp">
++
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_gravity="center"
++                android:gravity="center"
++                android:orientation="horizontal"
++                android:paddingEnd="2dp"
++                android:paddingStart="2dp"
++                android:textAlignment="center">
++
++                <TextView
++                    android:id="@+id/delta"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="+/-"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="12sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/avgdelta"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="avg"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="12sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/uploader_battery"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="--%"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="12sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/rig_battery"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="--%"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="12sp"
++                    android:textStyle="bold"
++                    android:visibility="gone" />
++
++                <TextView
++                    android:id="@+id/tmpBasal"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1.7"
++                    android:gravity="center"
++                    android:text="-.--U/h"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="12sp"
++                    android:textStyle="bold" />
++
++                <TextView
++                    android:id="@+id/bgiView"
++                    android:layout_width="0px"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:layout_weight="1"
++                    android:gravity="center"
++                    android:text="bgi"
++                    android:textAlignment="center"
++                    android:textColor="#000000"
++                    android:textSize="12sp"
++                    android:textStyle="bold"
++                    android:visibility="gone" />
++
++                <TextView
++                    android:id="@+id/AAPSv2"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:layout_weight="0"
++                    android:text=""
++                    android:visibility="gone" />
++
++            </LinearLayout>
++
++        </LinearLayout>
++
++        <LinearLayout
++            android:id="@+id/tertiary_layout"
++            android:layout_width="match_parent"
++            android:layout_height="0px"
++            android:layout_weight="0.22"
++            android:background="@color/black"
++            android:gravity="center"
++            android:orientation="vertical"
++            android:padding="1dp">
++
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="match_parent"
++                android:layout_gravity="center"
++                android:baselineAligned="false"
++                android:gravity="center"
++                android:orientation="horizontal"
++                android:weightSum="7">
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="wrap_content"
++                    android:layout_height="match_parent"
++                    android:layout_gravity="center"
++                    android:baselineAligned="false"
++                    android:gravity="center"
++                    android:orientation="vertical"
++                    android:textAlignment="center">
++
++                    <TextView
++                        android:id="@+id/cob_text"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="Carb"
++                        android:textColor="#FFFFFF"
++                        android:textSize="10sp"
++                        android:textStyle="bold" />
++
++                    <TextView
++                        android:id="@+id/cobView"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="--g"
++                        android:textAlignment="center"
++                        android:textColor="#FFFFFF"
++                        android:textSize="14sp"
++                        android:textStyle="bold" />
++
++                </LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++                <TextView
++                    android:id="@+id/watch_time"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:layout_gravity="center"
++                    android:gravity="center"
++                    android:text="12:00"
++                    android:textAlignment="center"
++                    android:textColor="#FFFFFF"
++                    android:textSize="26sp" />
++
++                <LinearLayout
++                    android:id="@+id/date_time"
++                    android:layout_width="wrap_content"
++                    android:layout_height="match_parent"
++                    android:layout_gravity="center"
++                    android:gravity="center"
++                    android:orientation="vertical"
++                    android:textAlignment="center"
++                    android:visibility="gone">
++
++                    <TextView
++                        android:id="@+id/day"
++                        android:layout_width="23dp"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="day"
++                        android:textAlignment="center"
++                        android:textColor="#FFFFFF"
++                        android:textSize="10sp" />
++
++                    <TextView
++                        android:id="@+id/month"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="mth"
++                        android:textColor="#FFFFFF"
++                        android:textSize="10sp" />
++
++                </LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="wrap_content"
++                    android:layout_height="match_parent"
++                    android:layout_gravity="center"
++                    android:gravity="center"
++                    android:orientation="vertical"
++                    android:textAlignment="center">
++
++
++                    <TextView
++                        android:id="@+id/iob_text"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="IOB"
++                        android:textAlignment="center"
++                        android:textColor="#FFFFFF"
++                        android:textSize="10sp"
++                        android:textStyle="bold" />
++
++                    <TextView
++                        android:id="@+id/iobView"
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_gravity="center"
++                        android:gravity="center"
++                        android:text="--U"
++                        android:textColor="#FFFFFF"
++                        android:textSize="14sp"
++                        android:textStyle="bold" />
++
++                </LinearLayout>
++
++                <LinearLayout
++                    android:layout_width="0px"
++                    android:layout_height="match_parent"
++                    android:layout_weight="1"
++                    android:orientation="horizontal"></LinearLayout>
++
++            </LinearLayout>
++
++        </LinearLayout>
++
++        <lecho.lib.hellocharts.view.LineChartView
++            android:id="@+id/chart"
++            android:layout_width="match_parent"
++            android:layout_height="0px"
++            android:layout_gravity="bottom"
++            android:layout_weight="0.41"
++            android:gravity="center_horizontal|top" />
++
++    </LinearLayout>
++
++</RelativeLayout>
+\ No newline at end of file
+Index: wear/src/main/res/values/colors.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/res/values/colors.xml	(revision 61411e6bd6f829a8404d274e85f0afda6dcadbbb)
++++ wear/src/main/res/values/colors.xml	(date 1577658114000)
+@@ -1,9 +1,9 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+ 
+-        <color name="wl_blue">#2878ff</color>
+-        <color name="wl_gray">#c1c1c1</color>
+-        <color name="text_color">#434343</color>
++    <color name="wl_blue">#2878ff</color>
++    <color name="wl_gray">#c1c1c1</color>
++    <color name="text_color">#434343</color>
+     <color name="cardObjectiveText">#779ECB</color>
+ 
+ 
+@@ -17,6 +17,7 @@
+     <color name="light_highColor">@color/yellow_700</color>
+     <color name="light_lowColor">@color/red_600</color>
+     <color name="light_midColor">@color/black</color>
++    <color name="light_greenmidColor">@color/green</color>
+     <color name="light_gridColor">@color/black</color>
+     <!-- dark colors -->
+     <color name="dark_mTime">@color/white</color>
+@@ -29,10 +30,10 @@
+     <color name="dark_uploaderBattery">@color/black</color>
+     <color name="dark_uploaderBatteryEmpty">@color/red_600</color>
+     <color name="dark_mStatus_home">@color/black</color>
+-
+     <color name="dark_highColor">@color/yellow_A200</color>
+     <color name="dark_lowColor">@color/RED</color>
+     <color name="dark_midColor">@color/grey_50</color>
++    <color name="dark_greenmidColor">@color/green</color>
+     <color name="dark_gridColor">@color/grey_50</color>
+ 
+     <!-- basal colors -->
+@@ -73,6 +74,9 @@
+     <!-- Black -->
+ 
+     <!-- White -->
+-    <color name="white">#FFFFFF</color>
++    <color name="white">#ffffff</color>
+     <!-- White -->
++    <!-- Green -->
++    <color name="green">#00ff00</color>
++    <!-- Green -->
+ </resources>
+\ No newline at end of file
+Index: wear/src/main/res/layout/activity_greenchart.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- wear/src/main/res/layout/activity_greenchart.xml	(date 1577658114000)
++++ wear/src/main/res/layout/activity_greenchart.xml	(date 1577658114000)
+@@ -0,0 +1,12 @@
++<?xml version="1.0" encoding="utf-8"?>
++<android.support.wearable.view.WatchViewStub
++        xmlns:android="http://schemas.android.com/apk/res/android"
++        xmlns:app="http://schemas.android.com/apk/res-auto"
++        xmlns:tools="http://schemas.android.com/tools"
++        android:id="@+id/watch_view_stub"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        app:rectLayout="@layout/rect_activity_greenchart"
++        app:roundLayout="@layout/round_activity_greenchart"
++        tools:context=".watchfaces.Home"
++        tools:deviceIds="wear"/>
+Index: .idea/codeStyles/Project.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/codeStyles/Project.xml	(revision 61411e6bd6f829a8404d274e85f0afda6dcadbbb)
++++ .idea/codeStyles/Project.xml	(date 1577483254000)
+@@ -1,9 +1,6 @@
+ <component name="ProjectCodeStyleConfiguration">
+   <code_scheme name="Project" version="173">
+     <option name="AUTODETECT_INDENTS" value="false" />
+-    <AndroidXmlCodeStyleSettings>
+-      <option name="ARRANGEMENT_SETTINGS_MIGRATED_TO_191" value="true" />
+-    </AndroidXmlCodeStyleSettings>
+     <JetCodeStyleSettings>
+       <option name="ALIGN_IN_COLUMNS_CASE_BRANCH" value="true" />
+       <option name="NAME_COUNT_TO_USE_STAR_IMPORT" value="6" />
+diff --git wear/src/main/res/drawable/watchface_green.png wear/src/main/res/drawable/watchface_green.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..a7003867ed904c87e241f4e17038d51df13d10d8
+GIT binary patch
+literal 22235
+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
+Gi2fHzg?HKj
+
