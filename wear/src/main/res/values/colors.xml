@@ -17,7 +17,6 @@
     <color name="light_highColor">@color/yellow_700</color>
     <color name="light_lowColor">@color/red_600</color>
     <color name="light_midColor">@color/black</color>
-    <color name="light_greenmidColor">@color/green</color>
     <color name="light_gridColor">@color/black</color>
     <!-- dark colors -->
     <color name="dark_mTime">@color/white</color>
@@ -30,10 +29,10 @@
     <color name="dark_uploaderBattery">@color/black</color>
     <color name="dark_uploaderBatteryEmpty">@color/red_600</color>
     <color name="dark_mStatus_home">@color/black</color>
+
     <color name="dark_highColor">@color/yellow_A200</color>
     <color name="dark_lowColor">@color/RED</color>
     <color name="dark_midColor">@color/grey_50</color>
-    <color name="dark_greenmidColor">@color/green</color>
     <color name="dark_gridColor">@color/grey_50</color>
 
     <!-- basal colors -->
@@ -74,9 +73,6 @@
     <!-- Black -->
 
     <!-- White -->
-    <color name="white">#ffffff</color>
+    <color name="white">#FFFFFF</color>
     <!-- White -->
-    <!-- Green -->
-    <color name="green">#00ff00</color>
-    <!-- Green -->
 </resources>

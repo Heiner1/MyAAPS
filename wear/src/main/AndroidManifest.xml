@@ -58,25 +58,6 @@
         </service>
 
         <service
-            android:name=".watchfaces.GreenChart"
-            android:allowEmbedded="true"
-            android:label="@string/label_xdrip_greenchart"
-            android:permission="android.permission.BIND_WALLPAPER">
-            <meta-data
-                android:name="android.service.wallpaper"
-                android:resource="@xml/watch_face" />
-            <meta-data
-                android:name="com.google.android.wearable.watchface.preview"
-                android:resource="@drawable/watchface_green" />
-
-            <intent-filter>
-                <action android:name="android.service.wallpaper.WallpaperService" />
-
-                <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
-            </intent-filter>
-        </service>
-
-        <service
             android:name=".watchfaces.Home"
             android:allowEmbedded="true"
             android:label="@string/label_xdrip"
