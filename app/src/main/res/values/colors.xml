@@ -14,7 +14,7 @@
     <color name="activity">#d3f166</color>
     <color name="devslopepos">#FFFFFF00</color>
     <color name="devslopeneg">#FFFF00FF</color>
-    <color name="inrange">#A4ECEA</color>
+    <color name="inrange">#00FF00</color>
     <color name="low">#FF0000</color>
     <color name="high">#FFFF00</color>
     <color name="actionsConfirm">#FFFF00</color>
@@ -33,6 +33,7 @@
 
     <color name="defaultbackground">#424242</color>
     <color name="defaulttext">#BBBBBB</color>
+    <color name="defaulttextcolor">#B3FFFFFF</color>
 
     <color name="tempTargetBackground">#77dd77</color>
     <color name="tempTargetConfirmation">#77dd77</color>
