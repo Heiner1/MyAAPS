@@ -107,11 +107,10 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:orientation="vertical">
 
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal">
 
@@ -150,22 +149,20 @@
 
                             <TextView
                                 android:id="@+id/overview_timeago"
-                                android:layout_width="match_parent"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginTop="-2dp"
                                 android:paddingStart="2dp"
-                                android:layout_weight="0.5"
                                 android:textSize="14sp" />
 
                             <TextView
                                 android:id="@+id/overview_delta"
-                                android:layout_width="match_parent"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginTop="-2dp"
                                 android:paddingStart="2dp"
-                                android:layout_weight="0.5"
                                 android:textSize="14sp" />
 
                             <TextView
@@ -173,15 +170,20 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginLeft="10dp"
-                                android:layout_weight="0.5"
-                                android:textSize="12sp"/>
+                                android:textSize="14sp"/>
                         </LinearLayout>
                     </LinearLayout>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
 
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="5dp"
                         android:layout_marginTop="6dp"
                         android:orientation="vertical">
 
@@ -193,7 +195,6 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="20dp"
                                 android:layout_marginEnd="1dp"
                                 android:text="@string/iob"
                                 android:textSize="16sp" />
@@ -211,7 +212,7 @@
                                 android:layout_marginStart="14dp"
                                 android:text=""
                                 android:textSize="16sp"
-                                android:textStyle="bold"/>
+                                android:textStyle="bold" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -222,7 +223,6 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="20dp"
                                 android:layout_marginEnd="1dp"
                                 android:text="@string/cob"
                                 android:textSize="16sp" />
@@ -240,7 +240,7 @@
                                 android:layout_marginStart="8dp"
                                 android:text=""
                                 android:textSize="16sp"
-                                android:textStyle="bold"/>
+                                android:textStyle="bold" />
 
                         </LinearLayout>
 
@@ -252,7 +252,6 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="20dp"
                                 android:layout_marginEnd="1dp"
                                 android:text="@string/basal_short"
                                 android:textSize="16sp" />
@@ -270,7 +269,37 @@
                                 android:layout_marginStart="10dp"
                                 android:text="0.50U/h @17:35 1/30min - 0.40U/h"
                                 android:textSize="16sp"
-                                android:textStyle="bold"/>
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/overview_extendedbolus_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="1dp"
+                                android:text="@string/extended_bolus_short"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:layout_width="5dp"
+                                android:layout_height="wrap_content"
+                                android:text=":"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/overview_extendedbolus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:text="0.50U/h @17:35 1/30min - 0.40U/h"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
                         </LinearLayout>
 
                         <LinearLayout
@@ -281,7 +310,6 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="20dp"
                                 android:layout_marginEnd="1dp"
                                 android:text="AS"
                                 android:textSize="16sp" />
@@ -299,9 +327,14 @@
                                 android:layout_marginStart="20dp"
                                 android:text=""
                                 android:textSize="16sp"
-                                android:textStyle="bold"/>
+                                android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
 
                 </LinearLayout>
 
@@ -358,15 +391,6 @@
                         android:textSize="14sp" />
 
                 </LinearLayout>
-
-                <TextView
-                    android:id="@+id/overview_extendedbolus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
-                    android:textAlignment="center"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="@color/mdtp_white" />
 
                 <RelativeLayout
                     android:layout_width="wrap_content"

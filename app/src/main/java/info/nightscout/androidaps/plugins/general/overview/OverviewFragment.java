@@ -137,6 +137,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     TextView avgdeltaView;
     TextView baseBasalView;
     TextView extendedBolusView;
+    LinearLayout extendedBolusLayout;
     TextView activeProfileView;
     TextView iobView;
     TextView cobView;
@@ -240,6 +241,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         avgdeltaView = (TextView) view.findViewById(R.id.overview_avgdelta);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
+        extendedBolusLayout = view.findViewById(R.id.overview_extendedbolus_layout);
         activeProfileView = (TextView) view.findViewById(R.id.overview_activeprofile);
         pumpStatusView = (TextView) view.findViewById(R.id.overview_pumpstatus);
         pumpDeviceStatusView = (TextView) view.findViewById(R.id.overview_pump);
@@ -1045,8 +1047,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 if (deltaShortView != null)
                     deltaShortView.setText(Profile.toSignedUnitsString(glucoseStatus.delta, glucoseStatus.delta * Constants.MGDL_TO_MMOLL, units));
                 if (avgdeltaView != null)
-                    avgdeltaView.setText("øΔ15m: " + Profile.toUnitsString(glucoseStatus.short_avgdelta, glucoseStatus.short_avgdelta * Constants.MGDL_TO_MMOLL, units) +
-                            "  øΔ40m: " + Profile.toUnitsString(glucoseStatus.long_avgdelta, glucoseStatus.long_avgdelta * Constants.MGDL_TO_MMOLL, units));
+                    avgdeltaView.setText("øΔ15m: " + Profile.toUnitsString(glucoseStatus.short_avgdelta, glucoseStatus.short_avgdelta * Constants.MGDL_TO_MMOLL, units) + "\n" +
+                            "øΔ40m: " + Profile.toUnitsString(glucoseStatus.long_avgdelta, glucoseStatus.long_avgdelta * Constants.MGDL_TO_MMOLL, units));
             } else {
                 if (deltaView != null)
                     deltaView.setText("Δ " + MainApp.gs(R.string.notavailable));
@@ -1153,51 +1155,48 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (activeTemp != null) {
                 basalText = "T: " + activeTemp.toStringVeryShort();
             } else {
-                basalText = MainApp.gs(R.string.pump_basebasalrate,profile.getBasal());
+                basalText = MainApp.gs(R.string.pump_basebasalrate, profile.getBasal());
             }
-            baseBasalView.setOnClickListener(v -> {
-                String fullText = MainApp.gs(R.string.pump_basebasalrate_label) + ": " + MainApp.gs(R.string.pump_basebasalrate,profile.getBasal()) + "\n";
-                if (activeTemp != null) {
-                    fullText += MainApp.gs(R.string.pump_tempbasal_label) + ": " + activeTemp.toStringFull();
-                }
-                OKDialog.show(getActivity(), MainApp.gs(R.string.basal), fullText);
-            });
-
         } else {
             if (activeTemp != null) {
                 basalText = activeTemp.toStringFull();
             } else {
-                basalText = MainApp.gs(R.string.pump_basebasalrate,profile.getBasal());
+                basalText = MainApp.gs(R.string.pump_basebasalrate, profile.getBasal());
             }
         }
         baseBasalView.setText(basalText);
+        baseBasalView.setOnClickListener(v -> {
+            String fullText = MainApp.gs(R.string.pump_basebasalrate_label) + ": " + MainApp.gs(R.string.pump_basebasalrate, profile.getBasal()) + "\n";
+            if (activeTemp != null) {
+                fullText += MainApp.gs(R.string.pump_tempbasal_label) + ": " + activeTemp.toStringFull();
+            }
+            OKDialog.show(getActivity(), MainApp.gs(R.string.basal), fullText);
+        });
+
         if (activeTemp != null) {
             baseBasalView.setTextColor(MainApp.gc(R.color.basal));
         } else {
-           baseBasalView.setTextColor(MainApp.gc(R.color.defaulttextcolor));
+            baseBasalView.setTextColor(MainApp.gc(R.color.defaulttextcolor));
         }
 
 
         final ExtendedBolus extendedBolus = TreatmentsPlugin.getPlugin().getExtendedBolusFromHistory(System.currentTimeMillis());
         String extendedBolusText = "";
         if (extendedBolusView != null) { // must not exists in all layouts
-            if (shorttextmode) {
-                if (extendedBolus != null && !pump.isFakingTempsByExtendedBoluses()) {
-                    extendedBolusText = DecimalFormatter.to2Decimal(extendedBolus.absoluteRate()) + "U/h";
-                }
-            } else {
-                if (extendedBolus != null && !pump.isFakingTempsByExtendedBoluses()) {
-                    extendedBolusText = extendedBolus.toString();
-                }
-            }
+            if (extendedBolus != null && !pump.isFakingTempsByExtendedBoluses())
+                extendedBolusText = shorttextmode ? DecimalFormatter.to2Decimal(extendedBolus.absoluteRate()) + "U/h" : extendedBolus.toStringMedium();
             extendedBolusView.setText(extendedBolusText);
-            if (Config.NSCLIENT) {
-                extendedBolusView.setOnClickListener(v -> OKDialog.show(getActivity(), MainApp.gs(R.string.extended_bolus), extendedBolus.toString()));
+            extendedBolusView.setOnClickListener(v -> {
+                if (extendedBolus != null)
+                    OKDialog.show(getActivity(), MainApp.gs(R.string.extended_bolus), extendedBolus.toString());
+            });
+            // hide whole line for APS mode
+            if (extendedBolusLayout != null) {
+                if (extendedBolusText.equals(""))
+                    extendedBolusLayout.setVisibility(View.GONE);
+                else
+                    extendedBolusLayout.setVisibility(View.VISIBLE);
             }
-            if (extendedBolusText.equals(""))
-                extendedBolusView.setVisibility(Config.NSCLIENT ? View.INVISIBLE : View.GONE);
-            else
-                extendedBolusView.setVisibility(View.VISIBLE);
         }
 
         activeProfileView.setText(ProfileFunctions.getInstance().getProfileNameWithDuration());
