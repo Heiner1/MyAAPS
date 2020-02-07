@@ -1443,4 +1443,14 @@
     <string name="alreadyset">Già impostato</string>
     <string name="message">Messaggio</string>
     <string name="clearqueueconfirm">Cancellare la coda? Tutti i dati in coda andranno persi!</string>
+    <string name="ebstopsloop">L\'uso della funzione bolo esteso interromperà la modalità loop chiuso per il tempo di esecuzione del bolo esteso. Lo vuoi davvero?</string>
+    <string name="closed_loop_disabled_with_eb">Loop chiuso disabilitato a causa dell\'esecuzione di un bolo esteso</string>
+    <string name="extended_bolus_short">BE</string>
+    <string name="phonechecker">\"PhoneChecker\"</string>
+    <string name="chartmenu">Menu grafico</string>
+    <string name="sensitivity_short">AS</string>
+    <string name="loop_smbrequest_time_label">Tempo richiesta SMB</string>
+    <string name="loop_smbexecution_time_label">Tempo esecuzione SMB</string>
+    <string name="loop_tbrrequest_time_label">Tempo richiesta basale temporanea</string>
+    <string name="loop_tbrexecution_time_label">Tempo esecuzione basale temporanea</string>
 </resources>
