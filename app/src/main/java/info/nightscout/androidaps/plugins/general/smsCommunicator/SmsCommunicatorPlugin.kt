@@ -9,6 +9,7 @@ import android.telephony.SmsManager
 import android.telephony.SmsMessage
 import android.text.TextUtils
 import com.andreabaccega.widget.ValidatingEditTextPreference
+import info.nightscout.androidaps.Config
 import info.nightscout.androidaps.Constants
 import info.nightscout.androidaps.MainApp
 import info.nightscout.androidaps.R
@@ -190,6 +191,12 @@ object SmsCommunicatorPlugin : PluginBase(PluginDescription()
         log.debug(receivedSms.toString())
         val splitted = receivedSms.text.split(Regex("\\s+")).toTypedArray()
         val remoteCommandsAllowed = SP.getBoolean(R.string.key_smscommunicator_remotecommandsallowed, false)
+
+        val minDistance =
+            if (areMoreNumbers(SP.getString(R.string.key_smscommunicator_allowednumbers, "")))
+                T.mins(SP.getLong(R.string.key_smscommunicator_remotebolusmindistance, T.msecs(Constants.remoteBolusMinDistance).mins())).msecs()
+            else Constants.remoteBolusMinDistance
+
         if (splitted.isNotEmpty() && isCommand(splitted[0].toUpperCase(Locale.getDefault()), receivedSms.phoneNumber)) {
             when (splitted[0].toUpperCase(Locale.getDefault())) {
                 "BG" ->
@@ -222,7 +229,7 @@ object SmsCommunicatorPlugin : PluginBase(PluginDescription()
                     else sendSMS(Sms(receivedSms.phoneNumber, R.string.wrongformat))
                 "BOLUS" ->
                     if (!remoteCommandsAllowed) sendSMS(Sms(receivedSms.phoneNumber, R.string.smscommunicator_remotecommandnotallowed))
-                    else if (splitted.size == 2 && DateUtil.now() - lastRemoteBolusTime < Constants.remoteBolusMinDistance) sendSMS(Sms(receivedSms.phoneNumber, R.string.smscommunicator_remotebolusnotallowed))
+                    else if (splitted.size == 2 && DateUtil.now() - lastRemoteBolusTime < minDistance) sendSMS(Sms(receivedSms.phoneNumber, R.string.smscommunicator_remotebolusnotallowed))
                     else if (splitted.size == 2 && pump.isSuspended) sendSMS(Sms(receivedSms.phoneNumber, R.string.pumpsuspended))
                     else if (splitted.size == 2 || splitted.size == 3) processBOLUS(splitted, receivedSms)
                     else sendSMS(Sms(receivedSms.phoneNumber, R.string.wrongformat))
@@ -323,7 +330,7 @@ object SmsCommunicatorPlugin : PluginBase(PluginDescription()
             "RESUME" -> {
                 LoopPlugin.getPlugin().suspendTo(0)
                 send(EventRefreshOverview("SMS_LOOP_RESUME"))
-                NSUpload.uploadOpenAPSOffline(0.0)
+                LoopPlugin.getPlugin().createOfflineEvent(0)
                 sendSMSToAllNumbers(Sms(receivedSms.phoneNumber, R.string.smscommunicator_loopresumed))
             }
             "SUSPEND" -> {
@@ -345,7 +352,7 @@ object SmsCommunicatorPlugin : PluginBase(PluginDescription()
                                 override fun run() {
                                     if (result.success) {
                                         LoopPlugin.getPlugin().suspendTo(System.currentTimeMillis() + anInteger() * 60L * 1000)
-                                        NSUpload.uploadOpenAPSOffline(anInteger() * 60.toDouble())
+                                        LoopPlugin.getPlugin().createOfflineEvent(anInteger() * 60)
                                         send(EventRefreshOverview("SMS_LOOP_SUSPENDED"))
                                         val replyText = MainApp.gs(R.string.smscommunicator_loopsuspended) + " " +
                                                 MainApp.gs(if (result.success) R.string.smscommunicator_tempbasalcanceled else R.string.smscommunicator_tempbasalcancelfailed)
@@ -597,6 +604,7 @@ object SmsCommunicatorPlugin : PluginBase(PluginDescription()
                             override fun run() {
                                 if (result.success) {
                                     var replyText = String.format(MainApp.gs(R.string.smscommunicator_extendedset), aDouble, duration)
+                                    if (Config.APS) replyText += "\n" + MainApp.gs(R.string.loopsuspended)
                                     replyText += "\n" + ConfigBuilderPlugin.getPlugin().activePump?.shortStatus(true)
                                     sendSMSToAllNumbers(Sms(receivedSms.phoneNumber, replyText))
                                 } else {
@@ -705,20 +713,28 @@ object SmsCommunicatorPlugin : PluginBase(PluginDescription()
                 override fun run() {
                     val detailedBolusInfo = DetailedBolusInfo()
                     detailedBolusInfo.carbs = anInteger().toDouble()
+                    detailedBolusInfo.source = Source.USER
                     detailedBolusInfo.date = secondLong()
-                    ConfigBuilderPlugin.getPlugin().commandQueue.bolus(detailedBolusInfo, object : Callback() {
-                        override fun run() {
-                            if (result.success) {
-                                var replyText = String.format(MainApp.gs(R.string.smscommunicator_carbsset), anInteger)
-                                replyText += "\n" + ConfigBuilderPlugin.getPlugin().activePump?.shortStatus(true)
-                                sendSMSToAllNumbers(Sms(receivedSms.phoneNumber, replyText))
-                            } else {
-                                var replyText = MainApp.gs(R.string.smscommunicator_carbsfailed)
-                                replyText += "\n" + ConfigBuilderPlugin.getPlugin().activePump?.shortStatus(true)
-                                sendSMS(Sms(receivedSms.phoneNumber, replyText))
+                    if (ConfigBuilderPlugin.getPlugin().activePump?.pumpDescription?.storesCarbInfo == true) {
+                        ConfigBuilderPlugin.getPlugin().commandQueue.bolus(detailedBolusInfo, object : Callback() {
+                            override fun run() {
+                                if (result.success) {
+                                    var replyText = String.format(MainApp.gs(R.string.smscommunicator_carbsset), anInteger)
+                                    replyText += "\n" + ConfigBuilderPlugin.getPlugin().activePump?.shortStatus(true)
+                                    sendSMSToAllNumbers(Sms(receivedSms.phoneNumber, replyText))
+                                } else {
+                                    var replyText = MainApp.gs(R.string.smscommunicator_carbsfailed)
+                                    replyText += "\n" + ConfigBuilderPlugin.getPlugin().activePump?.shortStatus(true)
+                                    sendSMS(Sms(receivedSms.phoneNumber, replyText))
+                                }
                             }
-                        }
-                    })
+                        })
+                    } else {
+                        TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo, true)
+                        var replyText = String.format(MainApp.gs(R.string.smscommunicator_carbsset), anInteger)
+                        replyText += "\n" + ConfigBuilderPlugin.getPlugin().activePump?.shortStatus(true)
+                        sendSMSToAllNumbers(Sms(receivedSms.phoneNumber, replyText))
+                    }
                 }
             })
         }

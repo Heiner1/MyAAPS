@@ -27,20 +27,19 @@ import info.nightscout.androidaps.plugins.general.careportal.CareportalFragment
 import info.nightscout.androidaps.activities.ErrorHelperActivity
 import info.nightscout.androidaps.dialogs.ProfileSwitchDialog
 import info.nightscout.androidaps.dialogs.TempTargetDialog
+import info.nightscout.androidaps.logging.L
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin
 import info.nightscout.androidaps.queue.Callback
-import info.nightscout.androidaps.utils.FabricPrivacy
-import info.nightscout.androidaps.utils.SP
-import info.nightscout.androidaps.utils.SingleClickButton
-import info.nightscout.androidaps.utils.plusAssign
-import info.nightscout.androidaps.utils.toVisibility
+import info.nightscout.androidaps.utils.*
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.actions_fragment.*
 import kotlinx.android.synthetic.main.careportal_stats_fragment.*
+import org.slf4j.LoggerFactory
 import java.util.*
 
 class ActionsFragment : Fragment() {
+    private val log = LoggerFactory.getLogger(L.CORE)
 
     private var disposable: CompositeDisposable = CompositeDisposable()
 
@@ -62,10 +61,16 @@ class ActionsFragment : Fragment() {
             fragmentManager?.let { TempTargetDialog().show(it, "Actions") }
         }
         actions_extendedbolus.setOnClickListener {
-            fragmentManager?.let { ExtendedBolusDialog().show(it, "Actions") }
+            context?.let { context ->
+                OKDialog.showConfirmation(context, MainApp.gs(R.string.extended_bolus), MainApp.gs(R.string.ebstopsloop),
+                    Runnable {
+                        fragmentManager?.let { ExtendedBolusDialog().show(it, "Actions") }
+                    }, null)
+            }
         }
         actions_extendedbolus_cancel.setOnClickListener {
             if (TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress) {
+                log.debug("USER ENTRY: CANCEL EXTENDED BOLUS")
                 ConfigBuilderPlugin.getPlugin().commandQueue.cancelExtended(object : Callback() {
                     override fun run() {
                         if (!result.success) {
@@ -85,6 +90,7 @@ class ActionsFragment : Fragment() {
         }
         actions_canceltempbasal.setOnClickListener {
             if (TreatmentsPlugin.getPlugin().isTempBasalInProgress) {
+                log.debug("USER ENTRY: CANCEL TEMP BASAL")
                 ConfigBuilderPlugin.getPlugin().commandQueue.cancelTempBasal(true, object : Callback() {
                     override fun run() {
                         if (!result.success) {
@@ -110,6 +116,12 @@ class ActionsFragment : Fragment() {
         }
         actions_pumpbatterychange.setOnClickListener {
             fragmentManager?.let { CareDialog().setOptions(CareDialog.EventType.BATTERY_CHANGE, R.string.careportal_pumpbatterychange).show(it, "Actions") }
+        }
+        actions_note.setOnClickListener {
+            fragmentManager?.let { CareDialog().setOptions(CareDialog.EventType.NOTE, R.string.careportal_note).show(it, "Actions") }
+        }
+        actions_exercise.setOnClickListener {
+            fragmentManager?.let { CareDialog().setOptions(CareDialog.EventType.EXERCISE, R.string.careportal_exercise).show(it, "Actions") }
         }
 
         SP.putBoolean(R.string.key_objectiveuseactions, true)
@@ -172,7 +184,7 @@ class ActionsFragment : Fragment() {
 
         actions_profileswitch?.visibility = if (!basalProfileEnabled || !pump.isInitialized || pump.isSuspended) View.GONE else View.VISIBLE
 
-        if (!pump.pumpDescription.isExtendedBolusCapable || !pump.isInitialized || pump.isSuspended || pump.isFakingTempsByExtendedBoluses || Config.APS) {
+        if (!pump.pumpDescription.isExtendedBolusCapable || !pump.isInitialized || pump.isSuspended || pump.isFakingTempsByExtendedBoluses) {
             actions_extendedbolus?.visibility = View.GONE
             actions_extendedbolus_cancel?.visibility = View.GONE
         } else {
@@ -180,7 +192,7 @@ class ActionsFragment : Fragment() {
             if (activeExtendedBolus != null) {
                 actions_extendedbolus?.visibility = View.GONE
                 actions_extendedbolus_cancel?.visibility = View.VISIBLE
-                actions_extendedbolus_cancel?.text = MainApp.gs(R.string.cancel) + " " + activeExtendedBolus.toString()
+                actions_extendedbolus_cancel?.text = MainApp.gs(R.string.cancel) + " " + activeExtendedBolus.toStringMedium()
             } else {
                 actions_extendedbolus?.visibility = View.VISIBLE
                 actions_extendedbolus_cancel?.visibility = View.GONE

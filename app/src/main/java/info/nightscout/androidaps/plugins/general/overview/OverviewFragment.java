@@ -25,6 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.widget.PopupMenu;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
@@ -118,6 +119,7 @@ import info.nightscout.androidaps.utils.T;
 import info.nightscout.androidaps.utils.ToastUtils;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 
 import static info.nightscout.androidaps.utils.DateUtil.now;
 
@@ -147,7 +149,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     TextView openapsDeviceStatusView;
     TextView uploaderDeviceStatusView;
     TextView iobCalculationProgressView;
-    LinearLayout loopStatusLayout;
+    ConstraintLayout loopStatusLayout;
     LinearLayout pumpStatusLayout;
     GraphView bgGraph;
     GraphView iobGraph;
@@ -168,7 +170,6 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     RecyclerView notificationsView;
     LinearLayoutManager llm;
 
-    LinearLayout acceptTempLayout;
     SingleClickButton acceptTempButton;
 
     SingleClickButton treatmentButton;
@@ -221,7 +222,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             view = inflater.inflate(R.layout.overview_fragment_nsclient, container, false);
             shorttextmode = true;
         } else if (smallHeight || landscape) {
-            view = inflater.inflate(R.layout.overview_fragment_smallheight, container, false);
+            view = inflater.inflate(R.layout.overview_fragment_landscape, container, false);
         } else {
             view = inflater.inflate(R.layout.overview_fragment, container, false);
         }
@@ -246,7 +247,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         openapsDeviceStatusView = (TextView) view.findViewById(R.id.overview_openaps);
         uploaderDeviceStatusView = (TextView) view.findViewById(R.id.overview_uploader);
         iobCalculationProgressView = (TextView) view.findViewById(R.id.overview_iobcalculationprogess);
-        loopStatusLayout = (LinearLayout) view.findViewById(R.id.overview_looplayout);
+        loopStatusLayout = view.findViewById(R.id.overview_looplayout);
         pumpStatusLayout = (LinearLayout) view.findViewById(R.id.overview_pumpstatuslayout);
 
         pumpStatusView.setBackgroundColor(MainApp.gc(R.color.colorInitializingBorder));
@@ -293,8 +294,6 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         cgmButton = (SingleClickButton) view.findViewById(R.id.overview_cgmbutton);
         if (cgmButton != null)
             cgmButton.setOnClickListener(this);
-
-        acceptTempLayout = (LinearLayout) view.findViewById(R.id.overview_accepttemplayout);
 
         notificationsView = (RecyclerView) view.findViewById(R.id.overview_notifications);
         notificationsView.setHasFixedSize(false);
@@ -356,80 +355,80 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         super.onResume();
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventRefreshOverview.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(eventOpenAPSUpdateGui -> scheduleUpdateGUI(eventOpenAPSUpdateGui.getFrom()),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventExtendedBolusChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventExtendedBolusChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventTempBasalChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventTempBasalChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventTreatmentChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventTreatmentChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventTempTargetChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventTempTargetChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventAcceptOpenLoopChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventAcceptOpenLoopChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventCareportalEventChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventCareportalEventChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventInitializationChanged.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventInitializationChanged"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventAutosensCalculationFinished.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventAutosensCalculationFinished"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventProfileNeedsUpdate.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventProfileNeedsUpdate"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventPreferenceChange.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventPreferenceChange"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventNewOpenLoopNotification.class)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(event -> scheduleUpdateGUI("EventNewOpenLoopNotification"),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
                 .toObservable(EventPumpStatusChanged.class)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(event -> updatePumpStatus(event.getStatus()),
+                .subscribe(event -> updatePumpStatus(event),
                         FabricPrivacy::logException
                 ));
         disposable.add(RxBus.INSTANCE
@@ -668,6 +667,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             return true;
         final LoopPlugin loopPlugin = LoopPlugin.getPlugin();
         if (item.getTitle().equals(MainApp.gs(R.string.disableloop))) {
+            log.debug("USER ENTRY: LOOP DISABLED");
             loopPlugin.setPluginEnabled(PluginType.LOOP, false);
             loopPlugin.setFragmentVisible(PluginType.LOOP, false);
             ConfigBuilderPlugin.getPlugin().storeSettings("DisablingLoop");
@@ -680,17 +680,19 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     }
                 }
             });
-            NSUpload.uploadOpenAPSOffline(24 * 60); // upload 24h, we don't know real duration
+            LoopPlugin.getPlugin().createOfflineEvent(24 * 60); // upload 24h, we don't know real duration
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.enableloop))) {
+            log.debug("USER ENTRY: LOOP ENABLED");
             loopPlugin.setPluginEnabled(PluginType.LOOP, true);
             loopPlugin.setFragmentVisible(PluginType.LOOP, true);
             ConfigBuilderPlugin.getPlugin().storeSettings("EnablingLoop");
             updateGUI("suspendmenu");
-            NSUpload.uploadOpenAPSOffline(0);
+            LoopPlugin.getPlugin().createOfflineEvent(0);
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.resume)) ||
                 item.getTitle().equals(MainApp.gs(R.string.reconnect))) {
+            log.debug("USER ENTRY: RESUME");
             loopPlugin.suspendTo(0L);
             updateGUI("suspendmenu");
             ConfigBuilderPlugin.getPlugin().getCommandQueue().cancelTempBasal(true, new Callback() {
@@ -702,42 +704,51 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 }
             });
             SP.putBoolean(R.string.key_objectiveusereconnect, true);
-            NSUpload.uploadOpenAPSOffline(0);
+            LoopPlugin.getPlugin().createOfflineEvent(0);
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.suspendloopfor1h))) {
+            log.debug("USER ENTRY: SUSPEND 1h");
             LoopPlugin.getPlugin().suspendLoop(60);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.suspendloopfor2h))) {
+            log.debug("USER ENTRY: SUSPEND 2h");
             LoopPlugin.getPlugin().suspendLoop(120);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.suspendloopfor3h))) {
+            log.debug("USER ENTRY: SUSPEND 3h");
             LoopPlugin.getPlugin().suspendLoop(180);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.suspendloopfor10h))) {
+            log.debug("USER ENTRY: SUSPEND 10h");
             LoopPlugin.getPlugin().suspendLoop(600);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.disconnectpumpfor15m))) {
+            log.debug("USER ENTRY: DISCONNECT 15m");
             LoopPlugin.getPlugin().disconnectPump(15, profile);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.disconnectpumpfor30m))) {
+            log.debug("USER ENTRY: DISCONNECT 30m");
             LoopPlugin.getPlugin().disconnectPump(30, profile);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.disconnectpumpfor1h))) {
+            log.debug("USER ENTRY: DISCONNECT 1h");
             LoopPlugin.getPlugin().disconnectPump(60, profile);
             SP.putBoolean(R.string.key_objectiveusedisconnect, true);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.disconnectpumpfor2h))) {
+            log.debug("USER ENTRY: DISCONNECT 2h");
             LoopPlugin.getPlugin().disconnectPump(120, profile);
             updateGUI("suspendmenu");
             return true;
         } else if (item.getTitle().equals(MainApp.gs(R.string.disconnectpumpfor3h))) {
+            log.debug("USER ENTRY: DISCONNECT 3h");
             LoopPlugin.getPlugin().disconnectPump(180, profile);
             updateGUI("suspendmenu");
             return true;
@@ -755,6 +766,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (manager != null)
                 pvd.show(manager, "ProfileViewDialog");
         } else if (item.getTitle().equals(MainApp.gs(R.string.eatingsoon))) {
+            log.debug("USER ENTRY: TEMP TARGET EATING SOON");
             double target = Profile.toMgdl(DefaultValueHelper.determineEatingSoonTT(), ProfileFunctions.getSystemUnits());
             TempTarget tempTarget = new TempTarget()
                     .date(System.currentTimeMillis())
@@ -765,6 +777,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     .high(target);
             TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
         } else if (item.getTitle().equals(MainApp.gs(R.string.activity))) {
+            log.debug("USER ENTRY: TEMP TARGET ACTIVITY");
             double target = Profile.toMgdl(DefaultValueHelper.determineActivityTT(), ProfileFunctions.getSystemUnits());
             TempTarget tempTarget = new TempTarget()
                     .date(now())
@@ -775,6 +788,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     .high(target);
             TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
         } else if (item.getTitle().equals(MainApp.gs(R.string.hypo))) {
+            log.debug("USER ENTRY: TEMP TARGET HYPO");
             double target = Profile.toMgdl(DefaultValueHelper.determineHypoTT(), ProfileFunctions.getSystemUnits());
             TempTarget tempTarget = new TempTarget()
                     .date(now())
@@ -789,6 +803,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (manager != null)
                 new TempTargetDialog().show(manager, "Overview");
         } else if (item.getTitle().equals(MainApp.gs(R.string.cancel))) {
+            log.debug("USER ENTRY: TEMP TARGET CANCEL");
             TempTarget tempTarget = new TempTarget()
                     .source(Source.USER)
                     .date(now())
@@ -908,6 +923,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             final LoopPlugin.LastRun finalLastRun = LoopPlugin.lastRun;
             if (finalLastRun != null && finalLastRun.lastAPSRun != null && finalLastRun.constraintsProcessed.isChangeRequested()) {
                 OKDialog.showConfirmation(context, MainApp.gs(R.string.pump_tempbasal_label), finalLastRun.constraintsProcessed.toSpanned(), () -> {
+                    log.debug("USER ENTRY: ACCEPT TEMP BASAL");
                     hideTempRecommendation();
                     clearNotification();
                     LoopPlugin.getPlugin().acceptChangeRequest();
@@ -944,8 +960,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         Activity activity = getActivity();
         if (activity != null)
             activity.runOnUiThread(() -> {
-                if (acceptTempLayout != null)
-                    acceptTempLayout.setVisibility(View.GONE);
+                if (acceptTempButton != null)
+                    acceptTempButton.setVisibility(View.GONE);
             });
     }
 
@@ -957,7 +973,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         ActionStringHandler.handleInitiate("cancelChangeRequest");
     }
 
-    private void updatePumpStatus(String status) {
+    private void updatePumpStatus(EventPumpStatusChanged event) {
+        String status = event.getStatus();
         if (!status.equals("")) {
             pumpStatusView.setText(status);
             pumpStatusLayout.setVisibility(View.VISIBLE);
@@ -1045,8 +1062,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 if (deltaShortView != null)
                     deltaShortView.setText(Profile.toSignedUnitsString(glucoseStatus.delta, glucoseStatus.delta * Constants.MGDL_TO_MMOLL, units));
                 if (avgdeltaView != null)
-                    avgdeltaView.setText("øΔ15m: " + Profile.toUnitsString(glucoseStatus.short_avgdelta, glucoseStatus.short_avgdelta * Constants.MGDL_TO_MMOLL, units) +
-                            "  øΔ40m: " + Profile.toUnitsString(glucoseStatus.long_avgdelta, glucoseStatus.long_avgdelta * Constants.MGDL_TO_MMOLL, units));
+                    avgdeltaView.setText("øΔ15m: " + Profile.toUnitsString(glucoseStatus.short_avgdelta, glucoseStatus.short_avgdelta * Constants.MGDL_TO_MMOLL, units) + "\n" +
+                            "øΔ40m: " + Profile.toUnitsString(glucoseStatus.long_avgdelta, glucoseStatus.long_avgdelta * Constants.MGDL_TO_MMOLL, units));
             } else {
                 if (deltaView != null)
                     deltaView.setText("Δ " + MainApp.gs(R.string.notavailable));
@@ -1102,27 +1119,25 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         if (tempTarget != null) {
             tempTargetView.setTextColor(MainApp.gc(R.color.ribbonTextWarning));
             tempTargetView.setBackgroundColor(MainApp.gc(R.color.ribbonWarning));
-            tempTargetView.setVisibility(View.VISIBLE);
             tempTargetView.setText(Profile.toTargetRangeString(tempTarget.low, tempTarget.high, Constants.MGDL, units) + " " + DateUtil.untilString(tempTarget.end()));
         } else {
             tempTargetView.setTextColor(MainApp.gc(R.color.ribbonTextDefault));
             tempTargetView.setBackgroundColor(MainApp.gc(R.color.ribbonDefault));
             tempTargetView.setText(Profile.toTargetRangeString(profile.getTargetLowMgdl(), profile.getTargetHighMgdl(), Constants.MGDL, units));
-            tempTargetView.setVisibility(View.VISIBLE);
         }
 
         // **** Temp button ****
-        if (acceptTempLayout != null) {
+        if (acceptTempButton != null) {
             boolean showAcceptButton = !closedLoopEnabled.value(); // Open mode needed
             showAcceptButton = showAcceptButton && finalLastRun != null && finalLastRun.lastAPSRun != null; // aps result must exist
-            showAcceptButton = showAcceptButton && (finalLastRun.lastOpenModeAccept == null || finalLastRun.lastOpenModeAccept.getTime() < finalLastRun.lastAPSRun.getTime()); // never accepted or before last result
+            showAcceptButton = showAcceptButton && (finalLastRun.lastOpenModeAccept == 0 || finalLastRun.lastOpenModeAccept < finalLastRun.lastAPSRun.getTime()); // never accepted or before last result
             showAcceptButton = showAcceptButton && finalLastRun.constraintsProcessed.isChangeRequested(); // change is requested
 
             if (showAcceptButton && pump.isInitialized() && !pump.isSuspended() && LoopPlugin.getPlugin().isEnabled(PluginType.LOOP)) {
-                acceptTempLayout.setVisibility(View.VISIBLE);
+                acceptTempButton.setVisibility(View.VISIBLE);
                 acceptTempButton.setText(MainApp.gs(R.string.setbasalquestion) + "\n" + finalLastRun.constraintsProcessed);
             } else {
-                acceptTempLayout.setVisibility(View.GONE);
+                acceptTempButton.setVisibility(View.GONE);
             }
         }
 
@@ -1153,51 +1168,41 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (activeTemp != null) {
                 basalText = "T: " + activeTemp.toStringVeryShort();
             } else {
-                basalText = MainApp.gs(R.string.pump_basebasalrate,profile.getBasal());
+                basalText = MainApp.gs(R.string.pump_basebasalrate, profile.getBasal());
             }
-            baseBasalView.setOnClickListener(v -> {
-                String fullText = MainApp.gs(R.string.pump_basebasalrate_label) + ": " + MainApp.gs(R.string.pump_basebasalrate,profile.getBasal()) + "\n";
-                if (activeTemp != null) {
-                    fullText += MainApp.gs(R.string.pump_tempbasal_label) + ": " + activeTemp.toStringFull();
-                }
-                OKDialog.show(getActivity(), MainApp.gs(R.string.basal), fullText);
-            });
-
         } else {
             if (activeTemp != null) {
                 basalText = activeTemp.toStringFull();
             } else {
-                basalText = MainApp.gs(R.string.pump_basebasalrate,profile.getBasal());
+                basalText = MainApp.gs(R.string.pump_basebasalrate, profile.getBasal());
             }
         }
         baseBasalView.setText(basalText);
+        baseBasalView.setOnClickListener(v -> {
+            String fullText = MainApp.gs(R.string.pump_basebasalrate_label) + ": " + MainApp.gs(R.string.pump_basebasalrate, profile.getBasal()) + "\n";
+            if (activeTemp != null) {
+                fullText += MainApp.gs(R.string.pump_tempbasal_label) + ": " + activeTemp.toStringFull();
+            }
+            OKDialog.show(getActivity(), MainApp.gs(R.string.basal), fullText);
+        });
+
         if (activeTemp != null) {
             baseBasalView.setTextColor(MainApp.gc(R.color.basal));
         } else {
-           baseBasalView.setTextColor(MainApp.gc(R.color.defaulttextcolor));
+            baseBasalView.setTextColor(MainApp.gc(R.color.defaulttextcolor));
         }
 
 
         final ExtendedBolus extendedBolus = TreatmentsPlugin.getPlugin().getExtendedBolusFromHistory(System.currentTimeMillis());
         String extendedBolusText = "";
         if (extendedBolusView != null) { // must not exists in all layouts
-            if (shorttextmode) {
-                if (extendedBolus != null && !pump.isFakingTempsByExtendedBoluses()) {
-                    extendedBolusText = DecimalFormatter.to2Decimal(extendedBolus.absoluteRate()) + "U/h";
-                }
-            } else {
-                if (extendedBolus != null && !pump.isFakingTempsByExtendedBoluses()) {
-                    extendedBolusText = extendedBolus.toString();
-                }
-            }
+            if (extendedBolus != null && !pump.isFakingTempsByExtendedBoluses())
+                extendedBolusText = shorttextmode ? DecimalFormatter.to2Decimal(extendedBolus.absoluteRate()) + "U/h" : extendedBolus.toStringMedium();
             extendedBolusView.setText(extendedBolusText);
-            if (Config.NSCLIENT) {
-                extendedBolusView.setOnClickListener(v -> OKDialog.show(getActivity(), MainApp.gs(R.string.extended_bolus), extendedBolus.toString()));
-            }
-            if (extendedBolusText.equals(""))
-                extendedBolusView.setVisibility(Config.NSCLIENT ? View.INVISIBLE : View.GONE);
-            else
-                extendedBolusView.setVisibility(View.VISIBLE);
+            extendedBolusView.setOnClickListener(v -> {
+                if (extendedBolus != null)
+                    OKDialog.show(getActivity(), MainApp.gs(R.string.extended_bolus), extendedBolus.toString());
+            });
         }
 
         activeProfileView.setText(ProfileFunctions.getInstance().getProfileNameWithDuration());
